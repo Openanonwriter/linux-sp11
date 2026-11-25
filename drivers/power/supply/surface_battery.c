@@ -144,6 +144,10 @@ static unsigned int cache_time = 1000;
 module_param(cache_time, uint, 0644);
 MODULE_PARM_DESC(cache_time, "battery state caching time in milliseconds [default: 1000]");
 
+static bool denali_bind;
+module_param(denali_bind, bool, 0444);
+MODULE_PARM_DESC(denali_bind, "bind on the Surface Pro 11 (Denali), where qcom_battmgr reports the battery [default: false]");
+
 
 /* -- State management. ----------------------------------------------------- */
 
@@ -820,8 +824,12 @@ static int surface_battery_probe(struct ssam_device *sdev)
 	const struct spwr_psy_properties *p;
 	struct spwr_battery_device *bat;
 
-	/* Qualcomm battmgr is the authoritative battery provider on Denali. */
-	if (of_machine_is_compatible("microsoft,denali"))
+	/*
+	 * Qualcomm battmgr is the authoritative battery provider on Denali.
+	 * It needs the ADSP, whose firmware a system may not have yet:
+	 * denali_bind lets such a system read the battery from the EC.
+	 */
+	if (of_machine_is_compatible("microsoft,denali") && !denali_bind)
 		return -ENODEV;
 
 	p = ssam_device_get_match_data(sdev);
